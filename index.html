@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Feud</title>
+    <style>
+        /* --- RESET & BASICS --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial Black', 'Impact', sans-serif; }
+        body { 
+            background-color: #0d1b3e; 
+            color: white; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        /* --- STYLES FOR THE GAME BOARD (PROJECTOR AREA) --- */
+        #game-board {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle, #27458f 0%, #0d1b3e 100%);
+            position: relative;
+            padding: 10px; 
+        }
+
+        .battle-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+        }
+
+        .team-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border: 4px solid #fcd015;
+            border-radius: 15px;
+            width: 45%; 
+            height: 96%; /* MAXIMIZED HEIGHT */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; 
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .team-name {
+            font-size: 3rem; 
+            color: #fff;
+            margin-bottom: 40px; 
+            text-shadow: 2px 2px 0 #000;
+            background: transparent;
+            border: none;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .team-name:focus { outline: 2px solid #fcd015; background: rgba(0,0,0,0.5); }
+
+        .score-box {
+            background: linear-gradient(180deg, #000 0%, #1a1a1a 100%);
+            border: 3px solid #666;
+            color: #fcd015;
+            font-size: 8rem; 
+            padding: 30px 50px;
+            border-radius: 15px;
+            min-width: 260px;
+            text-align: center;
+            margin-bottom: 50px; 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            text-shadow: 0 0 10px rgba(252, 208, 21, 0.5);
+        }
+
+        .strikes-area {
+            display: flex;
+            gap: 20px;
+            height: 100px; 
+        }
+
+        .strike-slot {
+            width: 80px; 
+            height: 80px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #444;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .strike-active {
+            color: #ff0000;
+            font-size: 5rem; 
+            font-weight: bold;
+            text-shadow: 0 0 15px red;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* --- CENTER VS --- */
+        .vs-badge {
+            font-size: 4rem;
+            color: rgba(255,255,255,0.2);
+            font-weight: 900;
+            font-style: italic;
+        }
+
+        /* --- GIANT STRIKE OVERLAY ANIMATION --- */
+        #overlay-strike {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .big-x {
+            font-size: 25rem;
+            color: #d11f1f;
+            border: 10px solid #d11f1f;
+            border-radius: 20px;
+            padding: 0 40px;
+            background: #fff;
+            transform: scale(0);
+            box-shadow: 0 0 50px red;
+        }
+        .animate-strike {
+            animation: strikeFlash 1.5s ease-in-out;
+        }
+
+        /* --- CONTROL PANEL --- */
+        #controls {
+            height: 20vh;
+            background-color: #1a1a1a;
+            border-top: 4px solid #fcd015;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .control-group {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .group-title {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+        }
+
+        button {
+            flex: 1;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 0.9rem; /* Slightly smaller to fit 4 buttons */
+            transition: transform 0.1s, filter 0.1s;
+            text-transform: uppercase;
+            color: #000;
+            padding: 0 2px;
+        }
+
+        button:active { transform: scale(0.95); }
+        button:hover { filter: brightness(1.1); }
+
+        .btn-green { background-color: #4caf50; }
+        .btn-orange { background-color: #ff9800; } /* NEW Color for Subtract */
+        .btn-red { background-color: #ff5252; }
+        .btn-blue { background-color: #448aff; }
+        .btn-yellow { background-color: #fcd015; }
+        .btn-gray { background-color: #999; }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 5px;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 2px solid #555;
+            border-radius: 4px;
+            background: #222;
+            color: white;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes strikeFlash {
+            0% { transform: scale(0); opacity: 1; }
+            15% { transform: scale(1.2); }
+            20% { transform: scale(1); }
+            80% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+
+        @keyframes scoreUpdate {
+            0% { transform: scale(1); color: #fff; }
+            50% { transform: scale(1.1); color: #fcd015; }
+            100% { transform: scale(1); }
+        }
+        
+        .score-anim { animation: scoreUpdate 0.4s ease; }
+
+    </style>
+</head>
+<body>
+
+    <!-- OVERLAY FOR BIG 'X' ANIMATION -->
+    <div id="overlay-strike">
+        <div class="big-x">X</div>
+    </div>
+
+    <!-- PROJECTOR VIEW: GAME BOARD -->
+    <div id="game-board">
+        <div class="battle-area">
+            <!-- TEAM A -->
+            <div class="team-panel" id="panel-a">
+                <input type="text" class="team-name" value="TEAM A" id="name-a">
+                <div class="score-box" id="score-a">0</div>
+                <div class="strikes-area" id="strikes-a">
+                    <div class="strike-slot" data-slot="1"></div>
+                    <div class="strike-slot" data-slot="2"></div>
+                    <div class="strike-slot" data-slot="3"></div>
+                </div>
+            </div>
+
+            <div class="vs-badge">VS</div>
+
+            <!-- TEAM B -->
+            <div class="team-panel" id="panel-b">
+                <input type="text" class="team-name" value="TEAM B" id="name-b">
+                <div class="score-box" id="score-b">0</div>
+                <div class="strikes-area" id="strikes-b">
+                    <div class="strike-slot" data-slot="1"></div>
+                    <div class="strike-slot" data-slot="2"></div>
+                    <div class="strike-slot" data-slot="3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEACHER CONTROLS -->
+    <div id="controls">
+        
+        <!-- TEAM A CONTROLS -->
+        <div class="control-group">
+            <div class="group-title">Team A Controls</div>
+            <input type="number" id="input-score-a" placeholder="Enter points">
+            <div class="btn-row">
+                <button class="btn-green" onclick="addScore('a')">Add</button>
+                <button class="btn-orange" onclick="subtractScore('a')">Sub</button>
+                <button class="btn-red" onclick="addStrike('a')">Strike</button>
+                <button class="btn-gray" onclick="clearStrikes('a')">Clr X</button>
+            </div>
+        </div>
+
+        <!-- GLOBAL CONTROLS -->
+        <div class="control-group">
+            <div class="group-title">Game Master</div>
+            <div class="btn-row">
+                <button class="btn-yellow" onclick="clearAllStrikes()">Clear All Strikes</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn-blue" onclick="resetGame()">Reset Game</button>
+            </div>
+        </div>
+
+        <!-- TEAM B CONTROLS -->
+        <div class="control-group">
+            <div class="group-title">Team B Controls</div>
+            <input type="number" id="input-score-b" placeholder="Enter points">
+            <div class="btn-row">
+                <button class="btn-green" onclick="addScore('b')">Add</button>
+                <button class="btn-orange" onclick="subtractScore('b')">Sub</button>
+                <button class="btn-red" onclick="addStrike('b')">Strike</button>
+                <button class="btn-gray" onclick="clearStrikes('b')">Clr X</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // State
+        const state = {
+            a: { score: 0, strikes: 0 },
+            b: { score: 0, strikes: 0 }
+        };
+
+        // --- SCORES ---
+
+        function addScore(team) {
+            const input = document.getElementById(`input-score-${team}`);
+            const val = parseInt(input.value);
+            
+            if (!isNaN(val)) {
+                state[team].score += val;
+                updateScoreDisplay(team);
+                input.value = ''; // Clear input
+                input.focus();
+            }
+        }
+
+        // NEW: Deduct Score Function
+        function subtractScore(team) {
+            const input = document.getElementById(`input-score-${team}`);
+            const val = parseInt(input.value);
+            
+            if (!isNaN(val)) {
+                state[team].score -= val;
+                updateScoreDisplay(team);
+                input.value = ''; // Clear input
+                input.focus();
+            }
+        }
+
+        function updateScoreDisplay(team) {
+            const el = document.getElementById(`score-${team}`);
+            el.innerText = state[team].score;
+            
+            // Trigger animation
+            el.classList.remove('score-anim');
+            void el.offsetWidth; // Trigger reflow
+            el.classList.add('score-anim');
+        }
+
+        // --- STRIKES ---
+
+        function addStrike(team) {
+            if (state[team].strikes < 3) {
+                state[team].strikes++;
+                
+                // 1. Play big overlay animation
+                triggerOverlayStrike();
+
+                // 2. Update small indicators
+                updateStrikeDisplay(team);
+            } else {
+                // If full, just show overlay for effect
+                triggerOverlayStrike();
+            }
+        }
+
+        function clearStrikes(team) {
+            state[team].strikes = 0;
+            updateStrikeDisplay(team);
+        }
+
+        function clearAllStrikes() {
+            clearStrikes('a');
+            clearStrikes('b');
+        }
+
+        function updateStrikeDisplay(team) {
+            const container = document.getElementById(`strikes-${team}`);
+            const slots = container.querySelectorAll('.strike-slot');
+            const count = state[team].strikes;
+
+            slots.forEach((slot, index) => {
+                if (index < count) {
+                    slot.innerHTML = '<span class="strike-active">X</span>';
+                } else {
+                    slot.innerHTML = '';
+                }
+            });
+        }
+
+        function triggerOverlayStrike() {
+            const overlay = document.getElementById('overlay-strike');
+            const bigX = overlay.querySelector('.big-x');
+            
+            overlay.style.opacity = '1';
+            bigX.classList.add('animate-strike');
+
+            // Wait for animation to finish then hide
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                bigX.classList.remove('animate-strike');
+            }, 1500);
+        }
+
+        // --- GAME CONTROL ---
+
+        function resetGame() {
+            if(confirm("Are you sure you want to reset scores and strikes?")) {
+                state.a.score = 0;
+                state.a.strikes = 0;
+                state.b.score = 0;
+                state.b.strikes = 0;
+                
+                updateScoreDisplay('a');
+                updateScoreDisplay('b');
+                updateStrikeDisplay('a');
+                updateStrikeDisplay('b');
+                
+                document.getElementById('name-a').value = "TEAM A";
+                document.getElementById('name-b').value = "TEAM B";
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Shift + A -> Strike Team A
+            if (e.shiftKey && e.key.toLowerCase() === 'a') {
+                addStrike('a');
+            }
+            // Shift + B -> Strike Team B
+            if (e.shiftKey && e.key.toLowerCase() === 'b') {
+                addStrike('b');
+            }
+        });
+
+    </script>
+</body>
+</html>
